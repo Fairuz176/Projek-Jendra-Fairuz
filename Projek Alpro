@@ -1,0 +1,255 @@
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <fstream>
+
+using namespace std;
+
+const int MAXKendaraan = 100;
+
+struct Pelanggan {
+    string nama_pelanggan;
+    string plat_nomor;
+    string merk_kendaraan;
+};
+
+Pelanggan dataPelanggan[MAXKendaraan];
+int jumlahDataPelanggan = 0;
+
+void Judul(const string &judul) {
+    cout << "\n========== " << judul << " ==========" << endl;
+}
+
+void jeda() {
+    cout << "\nTekan Enter untuk melanjutkan...";
+    cin.ignore();
+    cin.get();
+}
+
+void tukar(Pelanggan &a, Pelanggan &b) {
+    Pelanggan temp = a;
+    a = b;
+    b = temp;
+}
+
+void tambahDataPelanggan() {
+    int jumlah;
+    cout << "\nBerapa data pelanggan yang ingin ditambahkan? ";
+    cin >> jumlah;
+    cin.ignore();  
+
+    if (jumlahDataPelanggan + jumlah > MAXKendaraan) {
+        cout << "\nKapasitas tidak mencukupi. Hanya bisa menambah "
+             << (MAXKendaraan - jumlahDataPelanggan) << " data lagi.\n";
+        jeda();
+        return;
+    }
+
+    for (int i = 0; i < jumlah; i++) {
+        cout << "\nData ke-" << (i + 1) << endl;
+        Pelanggan baru;
+        cout << "Masukkan Nama Pelanggan      : ";
+        getline(cin, baru.nama_pelanggan);
+        cout << "Masukkan Plat Nomor Kendaraan: ";
+        getline(cin, baru.plat_nomor);
+        cout << "Masukkan Merek Kendaraan     : ";
+        getline(cin, baru.merk_kendaraan);
+
+        dataPelanggan[jumlahDataPelanggan++] = baru;
+    }
+
+    cout << "\nSemua data pelanggan berhasil ditambahkan!\n";
+    jeda();
+}
+
+void tampilkanPelanggan() {
+    Judul("Daftar Pelanggan");
+    for (int i = 0; i < jumlahDataPelanggan; i++) {
+        cout << left << setw(25) << "Nama: " + dataPelanggan[i].nama_pelanggan
+             << " | Plat Nomor: " << setw(12) << dataPelanggan[i].plat_nomor
+             << " | Merek: " << dataPelanggan[i].merk_kendaraan << endl;
+    }
+    jeda();
+}
+
+int partition(int low, int high) {
+    string pivot = dataPelanggan[high].nama_pelanggan;
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        if (dataPelanggan[j].nama_pelanggan < pivot) {
+            i++;
+            tukar(dataPelanggan[i], dataPelanggan[j]);
+        }
+    }
+
+    tukar(dataPelanggan[i + 1], dataPelanggan[high]);
+    return i + 1;
+}
+
+void quickSort(int low, int high) {
+    if (low < high) {
+        int pi = partition(low, high);
+        quickSort(low, pi - 1);
+        quickSort(pi + 1, high);
+    }
+}
+
+void shellSort() {
+    for (int gap = jumlahDataPelanggan / 2; gap > 0; gap /= 2) {
+        for (int i = gap; i < jumlahDataPelanggan; i++) {
+            Pelanggan temp = dataPelanggan[i];
+            int j;
+            for (j = i; j >= gap && dataPelanggan[j - gap].plat_nomor > temp.plat_nomor; j -= gap) {
+                dataPelanggan[j] = dataPelanggan[j - gap];
+            }
+            dataPelanggan[j] = temp;
+        }
+    }
+}
+
+int binarySearchPelanggan(const string& platDicari) {
+    int kiri = 0;
+    int kanan = jumlahDataPelanggan - 1;
+
+    while (kiri <= kanan) {
+        int tengah = (kiri + kanan) / 2;
+        if (dataPelanggan[tengah].plat_nomor == platDicari) {
+            return tengah;
+        } else if (dataPelanggan[tengah].plat_nomor < platDicari) {
+            kiri = tengah + 1;
+        } else {
+            kanan = tengah - 1;
+        }
+    }
+
+    return -1;
+}
+
+void cariPelanggan() {
+    string PlatnomorCari;
+    cout << "\nMasukkan Plat nomor yang ingin dicari: ";
+    getline(cin, PlatnomorCari);
+
+    shellSort(); 
+
+    int indeks = binarySearchPelanggan(PlatnomorCari);
+    if (indeks != -1) {
+        cout << "\nPelanggan ditemukan!" << endl;
+        cout << "Nama           : " << dataPelanggan[indeks].nama_pelanggan << endl;
+        cout << "Plat Nomor     : " << dataPelanggan[indeks].plat_nomor << endl;
+        cout << "Merek Kendaraan: " << dataPelanggan[indeks].merk_kendaraan << endl;
+    } else {
+        cout << "\nPelanggan tidak ditemukan." << endl;
+    }
+    jeda();
+}
+
+void simpanKeFile() {
+    ofstream file("pelanggan.txt");
+    if (file.is_open()) {
+        for (int i = 0; i < jumlahDataPelanggan; i++) {
+            file << dataPelanggan[i].nama_pelanggan << ";"
+                 << dataPelanggan[i].plat_nomor << ";"
+                 << dataPelanggan[i].merk_kendaraan << "\n";
+        }
+        file.close();
+        cout << "\nData pelanggan berhasil disimpan ke file.\n";
+    } else {
+        cout << "\nGagal membuka file untuk menyimpan.\n";
+    }
+    jeda();
+}
+
+void bacaDariFile() {
+    ifstream file("pelanggan.txt");
+    if (file.is_open()) {
+        jumlahDataPelanggan = 0;
+        string baris;
+        while (getline(file, baris) && jumlahDataPelanggan < MAXKendaraan) {
+            size_t pos1 = baris.find(';');
+            size_t pos2 = baris.find(';', pos1 + 1);
+            if (pos1 != string::npos && pos2 != string::npos) {
+                dataPelanggan[jumlahDataPelanggan].nama_pelanggan = baris.substr(0, pos1);
+                dataPelanggan[jumlahDataPelanggan].plat_nomor = baris.substr(pos1 + 1, pos2 - pos1 - 1);
+                dataPelanggan[jumlahDataPelanggan].merk_kendaraan = baris.substr(pos2 + 1);
+                jumlahDataPelanggan++;
+            }
+        }
+        file.close();
+        cout << "\nData pelanggan berhasil dibaca dari file.\n";
+        tampilkanPelanggan();
+    } else {
+        cout << "\nFile tidak ditemukan.\n";
+    }
+    jeda();
+}
+
+void tampilkanPelangganBerdasarkanPilihan() {
+    int pilihanUrut;
+    Judul("Urutkan Data Pelanggan");
+    cout << "1. Urutkan berdasarkan Nama Pelanggan\n";
+    cout << "2. Urutkan berdasarkan Plat Nomor\n";
+    cout << "Pilihan Anda (1-2): ";
+    cin >> pilihanUrut;
+    cin.ignore();
+
+    if (pilihanUrut == 1) {
+        quickSort(0, jumlahDataPelanggan - 1);
+    } else if (pilihanUrut == 2) {
+        shellSort();
+    } else {
+        cout << "\nPilihan tidak valid. Kembali ke menu utama.\n";
+        jeda();
+        return;
+    }
+
+    tampilkanPelanggan();
+}
+
+void menuUtama() {
+    int pilihan;
+
+    do {
+        system("cls");
+        Judul("Menu Utama");
+        cout << "1. Tambah Data Pelanggan\n";
+        cout << "2. Tampilkan Daftar Pelanggan (Terurut)\n";
+        cout << "3. Cari Pelanggan berdasarkan Plat Nomor\n";
+        cout << "4. Simpan Data Pelanggan ke File\n";
+        cout << "5. Baca Data Pelanggan dari File\n";
+        cout << "6. Keluar\n";
+        cout << "Pilihan Anda (1-6): ";
+        cin >> pilihan;
+        cin.ignore(); 
+
+        switch (pilihan) {
+            case 1:
+                tambahDataPelanggan();
+                break;
+            case 2:
+                tampilkanPelangganBerdasarkanPilihan();
+                break;
+            case 3:
+                cariPelanggan();
+                break;
+            case 4:
+                simpanKeFile();
+                break;
+            case 5:
+                bacaDariFile();
+                break;
+            case 6:
+                cout << "\nTerima kasih! Program selesai.\n";
+                break;
+            default:
+                cout << "\nPilihan tidak valid. Silakan coba lagi.\n";
+                jeda();
+        }
+    } while (pilihan != 6);
+}
+
+int main() {
+    menuUtama();
+    return 0;
+}
